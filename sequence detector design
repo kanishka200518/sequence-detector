@@ -1,0 +1,74 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 25.10.2025 14:27:42
+// Design Name: 
+// Module Name: sequence_detector
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+// sequence_detector.v
+module sequence_detector(
+    input clk,
+    input reset,
+    input data_in,       // serial bit input (from switch)
+    output reg led1,     // pattern detected
+    output reg led2      // pattern not detected
+);
+
+    // State encoding using parameters
+    parameter S0 = 2'b00 ;  // initial / no match
+    parameter S1 = 2'b01;  // got '1'
+    parameter S2 = 2'b10;  // got '10'
+    parameter S3 = 2'b11;  // got '101'
+
+    reg [1:0] state, next_state;
+
+    // Sequential block (updates state)
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            state <= S0;         // start from S0
+        else
+            state <= next_state; // move to next state
+    end
+
+    // Combinational block (decides next state)
+    always @(*) begin
+        case (state)
+            S0: if (data_in) next_state = S1; else next_state = S0;
+            S1: if (data_in) next_state = S1; else next_state = S2;
+            S2: if (data_in) next_state = S3; else next_state = S0;
+            S3: if (data_in) next_state = S1; else next_state = S2;  // overlapping allowed
+            default: next_state = S0;
+        endcase
+    end
+
+    // Output logic (sequential - LED control)
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            led1 <= 0;
+            led2 <= 0;
+        end else begin
+            if (state == S4) begin
+                led1 <= 1; // pattern found
+                led2 <= 0;
+            end else begin
+                led1 <= 0;
+                led2 <= 1; // pattern not found
+            end
+        end
+    end
+endmodule
